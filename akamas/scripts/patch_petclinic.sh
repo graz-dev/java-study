@@ -2,14 +2,19 @@
 set -euo pipefail
 
 # ===========================================================================
-# Patch Deployment petclinic: risorse, JDK_JAVA_OPTIONS e HPA
+# Deploy petclinic: delete existing resources and re-apply with new config
 # ===========================================================================
 
 NAMESPACE="microservices-demo"
 DEPLOYMENT_NAME="petclinic"
+HPA_NAME="petclinic"
 DRY_RUN=false
 
-# Parametri obbligatori (inizializzati vuoti)
+TEMPL_DEPLOY="/work/code/java-study/app/resources/petclinic_templ.yaml"
+ACTUAL_DEPLOY="/work/code/java-study/app/resources/petclinic_actual.yaml"
+TEMPL_HPA="/work/code/java-study/app/kube/petclinic-hpa_templ.yaml"
+ACTUAL_HPA="/work/code/java-study/app/kube/petclinic-hpa_actual.yaml"
+
 CPU_REQUEST=""
 CPU_LIMIT=""
 MEMORY_REQUEST=""
@@ -24,36 +29,21 @@ usage() {
   cat <<EOF
 Usage: $(basename "$0") [OPTIONS]
 
-Patch the petclinic Deployment with new resource values,
+Delete and re-apply petclinic Deployment with new resource values,
 JDK_JAVA_OPTIONS, and HPA CPU target.
 
 Required:
-  --cpu-request <value>       CPU request (e.g. 500m)
-  --cpu-limit <value>         CPU limit (e.g. 2000m)
+  --cpu-request <value>       CPU request (e.g. 750m)
+  --cpu-limit <value>         CPU limit (e.g. 10000m)
   --memory-request <value>    Memory request (e.g. 2048Mi)
   --memory-limit <value>      Memory limit (e.g. 8192Mi)
-  --jvm-opts <value>          JDK_JAVA_OPTIONS string (e.g. "-Xmx4096m -XX:+UseG1GC")
-  --hpa-cpu-target <value>    HPA CPU target percentage (e.g. 70)
+  --jvm-opts <value>          JDK_JAVA_OPTIONS string
+  --hpa-cpu-target <value>    HPA CPU target percentage (e.g. 50)
 
 Optional:
   --namespace <ns>            Namespace (default: microservices-demo)
-  --dry-run                   Print kubectl commands without executing
+  --dry-run                   Print actions without executing
   -h, --help                  Show this help message
-
-Examples:
-  # Dry run
-  $(basename "$0") --dry-run \\
-    --cpu-request 500m --cpu-limit 2000m \\
-    --memory-request 2048Mi --memory-limit 8192Mi \\
-    --jvm-opts "-Xmx4096m -XX:+UseG1GC" \\
-    --hpa-cpu-target 70
-
-  # Live
-  $(basename "$0") \\
-    --cpu-request 750m --cpu-limit 2000m \\
-    --memory-request 2048Mi --memory-limit 8192Mi \\
-    --jvm-opts "-Xmx4096m -XX:+UseG1GC -XX:MinHeapFreeRatio=10" \\
-    --hpa-cpu-target 50
 EOF
   exit 0
 }
@@ -80,7 +70,6 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-# Validazione parametri obbligatori
 MISSING=()
 [[ -z "$CPU_REQUEST" ]]    && MISSING+=("--cpu-request")
 [[ -z "$CPU_LIMIT" ]]      && MISSING+=("--cpu-limit")
@@ -95,7 +84,6 @@ if [[ ${#MISSING[@]} -gt 0 ]]; then
   exit 1
 fi
 
-# Wrapper per dry-run
 run_cmd() {
   if [[ "$DRY_RUN" == true ]]; then
     echo "[DRY RUN] $*"
@@ -105,121 +93,98 @@ run_cmd() {
 }
 
 # ===========================================================================
-# 1. Verifica Deployment
+# 1. Genera manifest da template
 # ===========================================================================
 echo "=================================================="
-echo "  Verifica Deployment: $DEPLOYMENT_NAME"
+echo "  Generazione manifest"
 echo "=================================================="
-
-if ! kubectl get deployment "$DEPLOYMENT_NAME" -n "$NAMESPACE" &>/dev/null; then
-  echo "[ERROR] Deployment '$DEPLOYMENT_NAME' non trovato nel namespace '$NAMESPACE'"
-  exit 1
-fi
-
-echo "  Deployment trovato: $DEPLOYMENT_NAME"
+echo "  cpu request:      $CPU_REQUEST"
+echo "  cpu limit:        $CPU_LIMIT"
+echo "  memory request:   $MEMORY_REQUEST"
+echo "  memory limit:     $MEMORY_LIMIT"
+echo "  JDK_JAVA_OPTIONS: $JVM_OPTS"
+echo "  HPA CPU target:   ${HPA_CPU_TARGET}%"
 echo ""
 
-# Ricava l'HPA che punta al deployment
-HPA_NAME=$(kubectl get hpa -n "$NAMESPACE" \
-  -o jsonpath='{range .items[*]}{.metadata.name}{" "}{.spec.scaleTargetRef.name}{"\n"}{end}' \
-  | awk -v dep="$DEPLOYMENT_NAME" '$2 == dep {print $1}' \
-  | head -1 || true)
-
-if [[ -z "$HPA_NAME" ]]; then
-  echo "[WARNING] Nessun HPA trovato per '$DEPLOYMENT_NAME'. Salto patch HPA."
-  HPA_FOUND=false
-else
-  echo "  HPA trovato: $HPA_NAME"
-  HPA_FOUND=true
-fi
-echo ""
-
-# ===========================================================================
-# 2. Stato attuale
-# ===========================================================================
-echo "=================================================="
-echo "  Stato attuale"
-echo "=================================================="
-
-echo "  Resources:"
-kubectl get deployment "$DEPLOYMENT_NAME" -n "$NAMESPACE" \
-  -o jsonpath='    cpu request:    {.spec.template.spec.containers[0].resources.requests.cpu}
-    cpu limit:      {.spec.template.spec.containers[0].resources.limits.cpu}
-    memory request: {.spec.template.spec.containers[0].resources.requests.memory}
-    memory limit:   {.spec.template.spec.containers[0].resources.limits.memory}
+awk \
+  -v cpu_req="$CPU_REQUEST" \
+  -v cpu_lim="$CPU_LIMIT" \
+  -v mem_req="$MEMORY_REQUEST" \
+  -v mem_lim="$MEMORY_LIMIT" \
+  -v jvm="$JVM_OPTS" \
 '
-echo ""
-
-echo "  JDK_JAVA_OPTIONS:"
-JVM_CURRENT=$(kubectl get deployment "$DEPLOYMENT_NAME" -n "$NAMESPACE" \
-  -o jsonpath='{.spec.template.spec.containers[0].env[?(@.name=="JDK_JAVA_OPTIONS")].value}')
-echo "    ${JVM_CURRENT:-<non impostato>}"
-echo ""
-
-if [[ "$HPA_FOUND" == true ]]; then
-  echo "  HPA CPU target:"
-  HPA_CURRENT=$(kubectl get hpa "$HPA_NAME" -n "$NAMESPACE" \
-    -o jsonpath='{.spec.metrics[?(@.resource.name=="cpu")].resource.target.averageUtilization}' 2>/dev/null || true)
-  echo "    ${HPA_CURRENT:-<non trovato>}%"
-  echo ""
-fi
-
-# ===========================================================================
-# 3. Patch Deployment (resources + JDK_JAVA_OPTIONS)
-# ===========================================================================
-echo "=================================================="
-echo "  Patch Deployment: $DEPLOYMENT_NAME"
-echo "=================================================="
-echo "  Nuovi valori:"
-echo "    cpu request:      $CPU_REQUEST"
-echo "    cpu limit:        $CPU_LIMIT"
-echo "    memory request:   $MEMORY_REQUEST"
-echo "    memory limit:     $MEMORY_LIMIT"
-echo "    JDK_JAVA_OPTIONS: $JVM_OPTS"
-echo ""
-
-CONTAINER_NAME=$(kubectl get deployment "$DEPLOYMENT_NAME" -n "$NAMESPACE" \
-  -o jsonpath='{.spec.template.spec.containers[0].name}')
-
-PATCH_JSON=$(cat <<EOF
-{
-  "spec": {
-    "template": {
-      "spec": {
-        "containers": [{
-          "name": "$CONTAINER_NAME",
-          "resources": {
-            "requests": {
-              "cpu": "$CPU_REQUEST",
-              "memory": "$MEMORY_REQUEST"
-            },
-            "limits": {
-              "cpu": "$CPU_LIMIT",
-              "memory": "$MEMORY_LIMIT"
-            }
-          },
-          "env": [{
-            "name": "JDK_JAVA_OPTIONS",
-            "value": "$JVM_OPTS"
-          }]
-        }]
-      }
-    }
-  }
+/name: JDK_JAVA_OPTIONS/ {
+  print
+  getline
+  match($0, /^[[:space:]]+/)
+  print substr($0, 1, RLENGTH) "value: \"" jvm "\""
+  next
 }
-EOF
-)
+/^[[:space:]]+requests:/ { section="requests" }
+/^[[:space:]]+limits:/   { section="limits" }
+section == "requests" && /^[[:space:]]+cpu:/ {
+  match($0, /^[[:space:]]+/)
+  print substr($0, 1, RLENGTH) "cpu: " cpu_req
+  next
+}
+section == "requests" && /^[[:space:]]+memory:/ {
+  match($0, /^[[:space:]]+/)
+  print substr($0, 1, RLENGTH) "memory: " mem_req
+  next
+}
+section == "limits" && /^[[:space:]]+cpu:/ {
+  match($0, /^[[:space:]]+/)
+  print substr($0, 1, RLENGTH) "cpu: " cpu_lim
+  next
+}
+section == "limits" && /^[[:space:]]+memory:/ {
+  match($0, /^[[:space:]]+/)
+  print substr($0, 1, RLENGTH) "memory: " mem_lim
+  next
+}
+{ print }
+' "$TEMPL_DEPLOY" > "$ACTUAL_DEPLOY"
 
-run_cmd kubectl patch deployment "$DEPLOYMENT_NAME" -n "$NAMESPACE" \
-  --type strategic \
-  -p "$PATCH_JSON"
+awk -v target="$HPA_CPU_TARGET" '
+/averageUtilization:/ {
+  match($0, /^[[:space:]]+/)
+  print substr($0, 1, RLENGTH) "averageUtilization: " target
+  next
+}
+{ print }
+' "$TEMPL_HPA" > "$ACTUAL_HPA"
 
-echo ""
-echo "  Deployment patchato."
+echo "  Manifest generati:"
+echo "    $ACTUAL_DEPLOY"
+echo "    $ACTUAL_HPA"
 echo ""
 
 # ===========================================================================
-# 4. Attendi completamento rollout
+# 2. Delete risorse esistenti
+# ===========================================================================
+echo "=================================================="
+echo "  Delete risorse esistenti"
+echo "=================================================="
+
+run_cmd kubectl delete deployment "$DEPLOYMENT_NAME" -n "$NAMESPACE" --ignore-not-found --wait
+run_cmd kubectl delete hpa "$HPA_NAME" -n "$NAMESPACE" --ignore-not-found
+
+echo ""
+
+# ===========================================================================
+# 3. Apply nuove risorse
+# ===========================================================================
+echo "=================================================="
+echo "  Apply nuove risorse"
+echo "=================================================="
+
+run_cmd kubectl apply -f "$ACTUAL_DEPLOY"
+run_cmd kubectl apply -f "$ACTUAL_HPA"
+
+echo ""
+
+# ===========================================================================
+# 4. Attendi rollout
 # ===========================================================================
 echo "=================================================="
 echo "  Attendi rollout: $DEPLOYMENT_NAME"
@@ -228,27 +193,6 @@ echo "=================================================="
 run_cmd kubectl rollout status deployment "$DEPLOYMENT_NAME" -n "$NAMESPACE" --timeout=300s
 
 echo ""
-echo "  Rollout completato."
-echo ""
-
-# ===========================================================================
-# 5. Patch HPA
-# ===========================================================================
-if [[ "$HPA_FOUND" == true ]]; then
-  echo "=================================================="
-  echo "  Patch HPA: $HPA_NAME"
-  echo "=================================================="
-  echo "  Nuovo CPU target: ${HPA_CPU_TARGET}%"
-  echo ""
-
-  run_cmd kubectl patch hpa "$HPA_NAME" -n "$NAMESPACE" \
-    --type json \
-    -p "[{\"op\":\"replace\",\"path\":\"/spec/metrics/0/resource/target/averageUtilization\",\"value\":${HPA_CPU_TARGET}}]"
-
-  echo ""
-  echo "  HPA patchato."
-  echo ""
-fi
 
 # ===========================================================================
 # Riepilogo
@@ -262,6 +206,6 @@ else
   echo "  Deployment: $DEPLOYMENT_NAME"
   echo "  Namespace:  $NAMESPACE"
   echo "  Verificare con:"
-  echo "    kubectl get deployment $DEPLOYMENT_NAME -n $NAMESPACE -o jsonpath='{.spec.template.spec.containers[0].resources}'"
+  echo "    kubectl get deployment $DEPLOYMENT_NAME -n $NAMESPACE"
   echo "    kubectl get hpa -n $NAMESPACE"
 fi
