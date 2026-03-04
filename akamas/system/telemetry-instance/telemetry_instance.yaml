@@ -11,22 +11,16 @@ config:
 metrics:
 # WebApp (OTel - http_server_request_duration_seconds)
 - metric: requests_throughput
-  component: petclinic_webapp
   datasourceMetric: sum(rate(http_server_request_duration_seconds_count{job="petclinic"}[$DURATION$]))
 - metric: requests_response_time_p50
-  component: petclinic_webapp
   datasourceMetric: histogram_quantile(0.50, sum by(le) (rate(http_server_request_duration_seconds_bucket{job="petclinic"}[$DURATION$])))
 - metric: requests_response_time_p90
-  component: petclinic_webapp
   datasourceMetric: histogram_quantile(0.90, sum by(le) (rate(http_server_request_duration_seconds_bucket{job="petclinic"}[$DURATION$])))
 - metric: requests_response_time_p99
-  component: petclinic_webapp
   datasourceMetric: histogram_quantile(0.99, sum by(le) (rate(http_server_request_duration_seconds_bucket{job="petclinic"}[$DURATION$])))
 - metric: requests_response_time_max
-  component: petclinic_webapp
   datasourceMetric: histogram_quantile(1.0, sum by(le) (rate(http_server_request_duration_seconds_bucket{job="petclinic"}[$DURATION$])))
 - metric: requests_response_time_min
-  component: petclinic_webapp
   datasourceMetric: histogram_quantile(0.01, sum by(le) (rate(http_server_request_duration_seconds_bucket{job="petclinic"}[$DURATION$])))
 
 # Workload (commented — auto-collected via Kubernetes Workload component type)
