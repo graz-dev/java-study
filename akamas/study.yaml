@@ -49,23 +49,23 @@ metricsSelection:
   - petclinic_workload.k8s_workload_memory_allocated
   
   # container
-  - petclinic_container.container_cpu_used
-  - petclinic_container.container_memory_used
-  - petclinic_container.container_cpu_request
-  - petclinic_container.container_cpu_limit
-  - petclinic_container.container_memory_request
-  - petclinic_container.container_memory_limit
-  - petclinic_container.container_restarts
+  - petclininc_container.container_cpu_used
+  - petclininc_container.container_memory_used
+  - petclininc_container.container_cpu_request
+  - petclininc_container.container_cpu_limit
+  - petclininc_container.container_memory_request
+  - petclininc_container.container_memory_limit
+  - petclininc_container.container_restarts
   
 
 parametersSelection:
-  - name: petclinic_container.cpu_request
+  - name: petclininc_container.cpu_request
     domain: [300, 2000]
-  - name: petclinic_container.cpu_limit
+  - name: petclininc_container.cpu_limit
     domain: [750, 3000]
-  - name: petclinic_container.memory_request
+  - name: petclininc_container.memory_request
     domain: [1024, 8192]
-  - name: petclinic_container.memory_limit
+  - name: petclininc_container.memory_limit
     domain: [4096, 10240]
   - name: petclinic_hpa.targetCPUUtilizationPercentage
     domain: [30, 90]
@@ -88,20 +88,20 @@ parametersSelection:
 
 parameterConstraints:
   - name: CPU req < limit petclinic
-    formula: petclinic_container.cpu_request <= petclinic_container.cpu_limit
+    formula: petclininc_container.cpu_request <= petclininc_container.cpu_limit
   - name: Mem request <= Mem limit petclinic
-    formula: petclinic_container.memory_request <= petclinic_container.memory_limit
+    formula: petclininc_container.memory_request <= petclininc_container.memory_limit
   - name: max heap + offheap <= Mem limit petclinic
-    formula: petclinic_jvm.jvm_maxHeapSize + 512 <= petclinic_container.memory_limit
+    formula: petclinic_jvm.jvm_maxHeapSize + 512 <= petclininc_container.memory_limit
   
 steps:
   - name: baseline
     type: baseline
     numberOfTrials: 1
     values:
-      petclinic_container.cpu_request: 750
-      petclinic_container.cpu_limit: 10000
-      petclinic_container.memory_request: 2048
-      petclinic_container.memory_limit: 8192
+      petclininc_container.cpu_request: 750
+      petclininc_container.cpu_limit: 10000
+      petclininc_container.memory_request: 2048
+      petclininc_container.memory_limit: 8192
       petclinic_hpa.targetCPUUtilizationPercentage: 50
       petclinic_jvm.jvm_tieredCompilationStopAtLevel: 4
