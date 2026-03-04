@@ -8,4 +8,3 @@ componentType: Web Application
 properties:
   prometheus:
     job: petclinic
-    instance: ".*"
