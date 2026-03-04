@@ -1,5 +1,5 @@
 kind: component 
-system: petclininc
+system: petclinic
 
 name: petclinic_container
 description: container
