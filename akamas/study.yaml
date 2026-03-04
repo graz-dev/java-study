@@ -20,7 +20,7 @@ goal:
       - name: Mem Util <= 0.8 * Mem Request petclinic
         formula: petclinic_workload.k8s_workload_memory_used - (0.8 * petclinic_workload.k8s_workload_memory_request) <= 0
       - name: Allocated Resources
-        formula: ((8 * (petclinic_workload.k8s_workload_cpu_allocated)/1000 + (petclinic_workload.k8s_workload_memory_allocated)/1024/1024/1024) <= 280 
+        formula: ((8 * (petclinic_workload.k8s_workload_cpu_allocated)/1000 + (petclinic_workload.k8s_workload_memory_allocated)/1024/1024/1024)) <= 280 
       
 windowing:
   type: trim 
