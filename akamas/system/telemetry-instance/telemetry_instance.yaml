@@ -1,0 +1,43 @@
+kind: telemetry-instance
+system: petclinic
+name: Prometheus
+provider: Prometheus
+config:
+  address: "kube-prometheus-kube-prome-prometheus.monitoring.svc.cluster.local"
+  port: 9090
+  duration: 30
+  logLevel: DETAILED
+
+#metrics:
+# Workload
+#- metric: k8s_workload_memory_used
+#  datasourceMetric: sum(last_over_time(container_memory_working_set_bytes{pod=~"$DEPLOYMENT$.*" %FILTERS%}[$DURATION$]))
+#- metric: k8s_workload_desired_pods
+#  datasourceMetric: k8s_deployment_desired{deployment=~"$DEPLOYMENT$" %FILTERS%}
+#- metric: k8s_workload_running_pods
+#  datasourceMetric: k8s_deployment_available{deployment=~"$DEPLOYMENT$" %FILTERS%}
+#- metric: k8s_workload_ready_pods
+#  datasourceMetric: avg(sum by (deployment) (k8s_container_ready{deployment=~"$DEPLOYMENT$" %FILTERS%}))
+#- metric: k8s_workload_cpu_request
+#  datasourceMetric: 1e3 * sum(k8s_container_cpu_request{pod=~"$DEPLOYMENT$.*" %FILTERS%})
+#- metric: k8s_workload_cpu_limit
+#  datasourceMetric: 1e3 * sum(k8s_container_cpu_limit{pod=~"$DEPLOYMENT$.*" %FILTERS%})
+#- metric: k8s_workload_memory_request
+#  datasourceMetric: sum(k8s_container_memory_request_bytes{pod=~"$DEPLOYMENT$.*" %FILTERS%})
+#- metric: k8s_workload_memory_limit
+#  datasourceMetric: sum(k8s_container_memory_limit_bytes{pod=~"$DEPLOYMENT$.*" %FILTERS%})
+#- metric: k8s_workload_cpu_allocated
+#  datasourceMetric: max(label_replace(1000 * sum(rate(container_cpu_usage_seconds_total{pod=~"$DEPLOYMENT$.*", container!="" %FILTERS%}[$DURATION$])), "source", "cpu_usage", "", "" ) or label_replace(1000 * sum(k8s_container_cpu_request{namespace=~"$NAMESPACE$", pod=~"$DEPLOYMENT$.*", container!="" %FILTERS%}), "source", "cpu_request", "", "" ) )
+#- metric: k8s_workload_memory_allocated
+#  datasourceMetric: max (label_replace(sum(k8s_container_memory_request_bytes{pod=~"$DEPLOYMENT$.*", container!="" %FILTERS%}), "source", "mem_request", "", "") or label_replace(sum(last_over_time(container_memory_working_set_bytes{namespace=~"$NAMESPACE$", pod=~"$DEPLOYMENT$.*", container!="" %FILTERS%}[$DURATION$])), "source", "mem_used", "", ""))
+
+# HPA
+#- metric: k8s_desired_replicas
+#  datasourceMetric: k8s_deployment_desired{deployment=~"$DEPLOYMENT$" %FILTERS%}
+#- metric: k8s_current_replicas
+#  datasourceMetric: k8s_deployment_available{deployment=~"$DEPLOYMENT$" %FILTERS%}
+#- metric: k8s_hpa_min_replicas
+#  datasourceMetric: min(k8s_deployment_desired{deployment=~"$DEPLOYMENT$" %FILTERS%})
+#- metric: k8s_hpa_max_replicas
+#  datasourceMetric: max(k8s_deployment_desired{deployment=~"$DEPLOYMENT$" %FILTERS%})
+

@@ -1,0 +1,11 @@
+kind: component
+system: petclinic
+
+name: petclinic_workload
+description: workload
+componentType: Kubernetes Workload
+
+properties:
+  prometheus:
+    namespace: microservices-demo
+    deployment: petclinic

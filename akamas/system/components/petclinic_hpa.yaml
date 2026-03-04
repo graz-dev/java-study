@@ -1,0 +1,11 @@
+kind: component
+system: petclinic
+
+name: petclinic_hpa
+description: hpa
+componentType: Kubernetes HPA v1
+
+properties:
+  prometheus:
+    namespace: microservices-demo
+    deployment: petclinic
