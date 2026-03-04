@@ -90,11 +90,11 @@ parameterConstraints:
 steps:
   - name: baseline
     type: baseline
-    numberOfTrials: 1
+    numberOfTrials: 3
     values:
-      petclinic_container.cpu_request: 750
-      petclinic_container.cpu_limit: 10000
-      petclinic_container.memory_request: 2048
-      petclinic_container.memory_limit: 8192
+      petclinic_container.cpu_request: 500
+      petclinic_container.cpu_limit: 2000
+      petclinic_container.memory_request: 2000
+      petclinic_container.memory_limit: 2000
       petclinic_hpa.targetCPUUtilizationPercentage: 50
-      petclinic_jvm.jvm_tieredCompilationStopAtLevel: 4
+      petclinic_jvm.jvm_maxHeapSize: 512

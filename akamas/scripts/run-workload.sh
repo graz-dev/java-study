@@ -13,8 +13,8 @@ NAMESPACE="${NAMESPACE:-microservices-demo}"
 JOB_NAME="k6-akamas-workload"
 # CYCLE_MINUTES=15: compressed diurnal cycle — leaves ~9m measurement window
 # after trim [1m, 5m]. Fits within the 20m workflow task timeout.
-CYCLE_MINUTES=5
-TIMEOUT_SECONDS=1200  # 20 min hard timeout
+CYCLE_MINUTES=30
+TIMEOUT_SECONDS=3600  # 20 min hard timeout
 
 START_TS=$(date +%s)
 log() { echo "[run-workload] $(date '+%H:%M:%S') $*"; }

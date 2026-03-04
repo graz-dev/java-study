@@ -13,15 +13,15 @@ metrics:
 - metric: requests_throughput
   datasourceMetric: sum(rate(http_server_request_duration_seconds_count{job="petclinic"}[$DURATION$]))
 - metric: requests_response_time_p50
-  datasourceMetric: histogram_quantile(0.50, sum by(le) (rate(http_server_request_duration_seconds_bucket{job="petclinic"}[$DURATION$])))
+  datasourceMetric: histogram_quantile(0.50, sum by(le) (rate(http_server_request_duration_seconds_bucket{job="petclinic"}[$DURATION$])))*1000
 - metric: requests_response_time_p90
-  datasourceMetric: histogram_quantile(0.90, sum by(le) (rate(http_server_request_duration_seconds_bucket{job="petclinic"}[$DURATION$])))
+  datasourceMetric: histogram_quantile(0.90, sum by(le) (rate(http_server_request_duration_seconds_bucket{job="petclinic"}[$DURATION$])))*1000
 - metric: requests_response_time_p99
-  datasourceMetric: histogram_quantile(0.99, sum by(le) (rate(http_server_request_duration_seconds_bucket{job="petclinic"}[$DURATION$])))
+  datasourceMetric: histogram_quantile(0.99, sum by(le) (rate(http_server_request_duration_seconds_bucket{job="petclinic"}[$DURATION$])))*1000
 - metric: requests_response_time_max
-  datasourceMetric: histogram_quantile(1.0, sum by(le) (rate(http_server_request_duration_seconds_bucket{job="petclinic"}[$DURATION$])))
+  datasourceMetric: histogram_quantile(1.0, sum by(le) (rate(http_server_request_duration_seconds_bucket{job="petclinic"}[$DURATION$])))*1000
 - metric: requests_response_time_min
-  datasourceMetric: histogram_quantile(0.01, sum by(le) (rate(http_server_request_duration_seconds_bucket{job="petclinic"}[$DURATION$])))
+  datasourceMetric: histogram_quantile(0.01, sum by(le) (rate(http_server_request_duration_seconds_bucket{job="petclinic"}[$DURATION$])))*1000
 
 # Workload (commented — auto-collected via Kubernetes Workload component type)
 #- metric: k8s_workload_memory_used
