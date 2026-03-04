@@ -2,5 +2,10 @@ kind: component
 system: petclinic
 
 name: petclinic_webapp
-description: container
+description: webapp
 componentType: Web Application
+
+properties:
+  prometheus:
+    job: petclinic
+    instance: ".*"

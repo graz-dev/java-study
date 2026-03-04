@@ -1,0 +1,425 @@
+{
+  "__inputs": [{ "name": "DS_PROMETHEUS", "label": "Prometheus", "type": "datasource", "pluginId": "prometheus", "pluginName": "Prometheus" }],
+  "__requires": [
+    { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "10.0.0" },
+    { "type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0" },
+    { "type": "panel", "id": "timeseries", "name": "Time series", "version": "" },
+    { "type": "panel", "id": "stat", "name": "Stat", "version": "" }
+  ],
+  "annotations": { "list": [] },
+  "description": "Java scaling performance & efficiency for Spring PetClinic — OTel resource labels (host_name, job)",
+  "editable": true,
+  "graphTooltip": 1,
+  "panels": [
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }, "id": 100, "title": "🔢 Fleet Overview", "type": "row" },
+
+    { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 3 }, { "color": "red", "value": 6 }] }, "unit": "short" } }, "gridPos": { "h": 4, "w": 3, "x": 0, "y": 1 }, "id": 1, "options": { "reduceOptions": { "calcs": ["mean"] }, "colorMode": "background" }, "targets": [{ "expr": "count(count by(host_name) (http_server_request_duration_seconds_count{job=~\"$job\"}))", "legendFormat": "Active Pods", "interval": "$min_step" }], "title": "Active Pods", "type": "stat" },
+    { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 500 }, { "color": "red", "value": 1000 }] }, "unit": "reqps" } }, "gridPos": { "h": 4, "w": 3, "x": 3, "y": 1 }, "id": 2, "options": { "reduceOptions": { "calcs": ["mean"] }, "colorMode": "background" }, "targets": [{ "expr": "sum(rate(http_server_request_duration_seconds_count{job=~\"$job\"}[$rate_window]))", "legendFormat": "Req/s", "interval": "$min_step" }], "title": "Total Throughput", "type": "stat" },
+    { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 0.2 }, { "color": "red", "value": 0.5 }] }, "unit": "s" } }, "gridPos": { "h": 4, "w": 3, "x": 6, "y": 1 }, "id": 3, "options": { "reduceOptions": { "calcs": ["mean"] }, "colorMode": "background" }, "targets": [{ "expr": "histogram_quantile(0.99, sum by(le) (rate(http_server_request_duration_seconds_bucket{job=~\"$job\"}[$rate_window])))", "legendFormat": "p99", "interval": "$min_step" }], "title": "p99 Latency", "type": "stat" },
+    { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 0.01 }, { "color": "red", "value": 0.05 }] }, "unit": "percentunit" } }, "gridPos": { "h": 4, "w": 3, "x": 9, "y": 1 }, "id": 4, "options": { "reduceOptions": { "calcs": ["mean"] }, "colorMode": "background" }, "targets": [{ "expr": "sum(rate(http_server_request_duration_seconds_count{job=~\"$job\", http_response_status_code=~\"5..\"}[$rate_window])) / sum(rate(http_server_request_duration_seconds_count{job=~\"$job\"}[$rate_window]))", "legendFormat": "Error Rate", "interval": "$min_step" }], "title": "Error Rate", "type": "stat" },
+    { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 0.7 }, { "color": "red", "value": 0.9 }] }, "unit": "percentunit" } }, "gridPos": { "h": 4, "w": 3, "x": 12, "y": 1 }, "id": 7, "options": { "reduceOptions": { "calcs": ["mean"] }, "colorMode": "background" }, "targets": [{ "expr": "sum(rate(container_cpu_usage_seconds_total{pod=~\"$pod_prefix.*\", container!=\"\", container!=\"POD\"}[$rate_window])) / sum(kube_pod_container_resource_requests{pod=~\"$pod_prefix.*\", resource=\"cpu\", container!=\"\"})", "legendFormat": "CPU %", "interval": "$min_step" }], "title": "CPU Utilization", "type": "stat" },
+    { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 0.7 }, { "color": "red", "value": 0.9 }] }, "unit": "percentunit" } }, "gridPos": { "h": 4, "w": 3, "x": 15, "y": 1 }, "id": 8, "options": { "reduceOptions": { "calcs": ["mean"] }, "colorMode": "background" }, "targets": [{ "expr": "sum(container_memory_working_set_bytes{pod=~\"$pod_prefix.*\", container!=\"\", container!=\"POD\"}) / sum(kube_pod_container_resource_requests{pod=~\"$pod_prefix.*\", resource=\"memory\", container!=\"\"})", "legendFormat": "Mem %", "interval": "$min_step" }], "title": "Memory Utilization", "type": "stat" },
+    { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 0.1 }, { "color": "red", "value": 0.25 }] }, "unit": "percentunit" } }, "gridPos": { "h": 4, "w": 2, "x": 18, "y": 1 }, "id": 9, "options": { "reduceOptions": { "calcs": ["mean"] }, "colorMode": "background" }, "targets": [{ "expr": "sum(rate(container_cpu_cfs_throttled_periods_total{pod=~\"$pod_prefix.*\", container!=\"\", container!=\"POD\"}[$rate_window])) / sum(rate(container_cpu_cfs_periods_total{pod=~\"$pod_prefix.*\", container!=\"\", container!=\"POD\"}[$rate_window]))", "legendFormat": "Throttle %", "interval": "$min_step" }], "title": "CPU Throttling", "type": "stat" },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 5 }] }, "unit": "short" } },
+      "gridPos": { "h": 2, "w": 2, "x": 20, "y": 1 }, "id": 90,
+      "options": { "reduceOptions": { "calcs": ["sum"] }, "colorMode": "background" },
+      "targets": [{ "expr": "sum(increase(kube_pod_container_status_restarts_total{pod=~\"$pod_prefix.*\"}[$rate_window]))", "legendFormat": "Restarts", "interval": "$min_step" }],
+      "title": "Restarts", "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] }, "unit": "short" } },
+      "gridPos": { "h": 2, "w": 2, "x": 20, "y": 3 }, "id": 91,
+      "options": { "reduceOptions": { "calcs": ["sum"] }, "colorMode": "background" },
+      "targets": [{ "expr": "sum(kube_pod_container_status_last_terminated_reason{pod=~\"$pod_prefix.*\", reason=\"OOMKilled\"})", "legendFormat": "OOMKills", "interval": "$min_step" }],
+      "title": "OOMKills", "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 3 }] }, "unit": "short" } },
+      "gridPos": { "h": 4, "w": 2, "x": 22, "y": 1 }, "id": 92,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "targets": [{ "expr": "count(kube_pod_status_phase{pod=~\"$pod_prefix.*\", phase=\"Pending\"}) or vector(0)", "legendFormat": "Pending Pods", "interval": "$min_step" }],
+      "title": "Pending Pods", "type": "stat"
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 }, "id": 101, "title": "📈 Throughput & Latency vs Scaling", "type": "row" },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": { "unit": "s", "custom": { "lineWidth": 1, "pointSize": 0, "showPoints": "never" } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Throughput (req/s)" }, "properties": [
+            { "id": "unit", "value": "reqps" },
+            { "id": "custom.axisPlacement", "value": "right" },
+            { "id": "color", "value": { "fixedColor": "blue", "mode": "fixed" } }
+          ]},
+          { "matcher": { "id": "byName", "options": "p99" }, "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "p95" }, "properties": [{ "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "p50" }, "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }] }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 }, "id": 10,
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "showLegend": true, "placement": "bottom" } },
+      "description": "Fleet-wide throughput (right axis, blue) overlaid with latency percentiles (left axis).",
+      "targets": [
+        { "expr": "sum(rate(http_server_request_duration_seconds_count{job=~\"$job\"}[$rate_window]))", "legendFormat": "Throughput (req/s)", "interval": "$min_step" },
+        { "expr": "histogram_quantile(0.50, sum by(le) (rate(http_server_request_duration_seconds_bucket{job=~\"$job\"}[$rate_window])))", "legendFormat": "p50", "interval": "$min_step" },
+        { "expr": "histogram_quantile(0.95, sum by(le) (rate(http_server_request_duration_seconds_bucket{job=~\"$job\"}[$rate_window])))", "legendFormat": "p95", "interval": "$min_step" },
+        { "expr": "histogram_quantile(0.99, sum by(le) (rate(http_server_request_duration_seconds_bucket{job=~\"$job\"}[$rate_window])))", "legendFormat": "p99", "interval": "$min_step" }
+      ],
+      "title": "Throughput & Latency Percentiles",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": { "unit": "s", "custom": { "lineWidth": 1, "pointSize": 0, "showPoints": "never" } },
+        "overrides": [{ "matcher": { "id": "byName", "options": "Active Pods" }, "properties": [
+          { "id": "unit", "value": "short" }, { "id": "custom.axisPlacement", "value": "right" },
+          { "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } },
+          { "id": "custom.lineStyle", "value": { "dash": [8, 4], "fill": "dash" } }
+        ]}]
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 }, "id": 11,
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "showLegend": true, "placement": "bottom" } },
+      "targets": [
+        { "expr": "sum(rate(http_server_request_duration_seconds_sum{job=~\"$job\"}[$rate_window])) / sum(rate(http_server_request_duration_seconds_count{job=~\"$job\"}[$rate_window]))", "legendFormat": "avg", "interval": "$min_step" },
+        { "expr": "histogram_quantile(0.50, sum by(le) (rate(http_server_request_duration_seconds_bucket{job=~\"$job\"}[$rate_window])))", "legendFormat": "p50", "interval": "$min_step" },
+        { "expr": "histogram_quantile(0.95, sum by(le) (rate(http_server_request_duration_seconds_bucket{job=~\"$job\"}[$rate_window])))", "legendFormat": "p95", "interval": "$min_step" },
+        { "expr": "histogram_quantile(0.99, sum by(le) (rate(http_server_request_duration_seconds_bucket{job=~\"$job\"}[$rate_window])))", "legendFormat": "p99", "interval": "$min_step" },
+        { "expr": "count(count by(host_name) (http_server_request_duration_seconds_count{job=~\"$job\"}))", "legendFormat": "Active Pods", "interval": "$min_step" }
+      ],
+      "title": "Latency Percentiles vs Pod Count",
+      "type": "timeseries"
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 }, "id": 112, "title": "📊 Resource Utilization", "type": "row" },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": { "unit": "percentunit", "min": 0, "custom": { "lineWidth": 1, "pointSize": 0, "showPoints": "never" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 0.7 }, { "color": "red", "value": 0.9 }] }
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 15 }, "id": 80,
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "showLegend": true, "placement": "bottom" } },
+      "description": "Ratio of total CPU used across all petclinic pods vs total CPU requested. Above 70% (yellow) = approaching saturation; above 90% (red) = likely throttling.",
+      "targets": [
+        { "refId": "A", "expr": "sum(rate(container_cpu_usage_seconds_total{pod=~\"$pod_prefix.*\", container!=\"\", container!=\"POD\"}[$rate_window])) / sum(kube_pod_container_resource_requests{pod=~\"$pod_prefix.*\", resource=\"cpu\", container!=\"\"})", "legendFormat": "CPU Utilization", "interval": "$min_step" }
+      ],
+      "title": "Aggregated CPU Utilization (Used / Requested)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": { "unit": "percentunit", "min": 0, "custom": { "lineWidth": 1, "pointSize": 0, "showPoints": "never" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 0.7 }, { "color": "red", "value": 0.9 }] }
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 15 }, "id": 81,
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "showLegend": true, "placement": "bottom" } },
+      "description": "Ratio of total memory working set across all petclinic pods vs total memory requested. Above 70% (yellow) = memory pressure building; above 90% (red) = OOMKill risk.",
+      "targets": [
+        { "refId": "A", "expr": "sum(container_memory_working_set_bytes{pod=~\"$pod_prefix.*\", container!=\"\", container!=\"POD\"}) / sum(kube_pod_container_resource_requests{pod=~\"$pod_prefix.*\", resource=\"memory\", container!=\"\"})", "legendFormat": "Memory Utilization", "interval": "$min_step" }
+      ],
+      "title": "Aggregated Memory Utilization (Used / Requested)",
+      "type": "timeseries"
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 23 }, "id": 102, "title": "☕ JVM Health & GC", "type": "row" },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "bytes", "custom": { "lineWidth": 1, "pointSize": 0, "showPoints": "never" } } },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 }, "id": 20,
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "hidden", "showLegend": false } },
+      "targets": [
+        { "expr": "sum by(host_name) (jvm_memory_used_bytes{job=~\"$job\", jvm_memory_type=\"heap\", host_name=~\"$pod\"})", "legendFormat": "Used - {{host_name}}", "interval": "$min_step" },
+        { "expr": "sum by(host_name) (jvm_memory_committed_bytes{job=~\"$job\", jvm_memory_type=\"heap\", host_name=~\"$pod\"})", "legendFormat": "Committed - {{host_name}}", "interval": "$min_step" }
+      ],
+      "title": "Heap Memory per Pod",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0, "custom": { "lineWidth": 1, "pointSize": 0, "showPoints": "never" },
+        "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 0.05 }, { "color": "red", "value": 0.15 }] }
+      }},
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 }, "id": 21,
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "hidden", "showLegend": false } },
+      "description": "Stop-the-world GC time as % of wall clock time over $rate_window. Above 5% (yellow) impacts latency; above 15% (red) indicates serious memory pressure.",
+      "targets": [
+        { "expr": "sum by(host_name) (rate(jvm_gc_duration_seconds_sum{job=~\"$job\", host_name=~\"$pod\"}[$rate_window]))", "legendFormat": "STW % - {{host_name}}", "interval": "$min_step" }
+      ],
+      "title": "Stop-the-World GC Time % per Pod",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "ops", "custom": { "lineWidth": 1, "pointSize": 0, "showPoints": "never" } } },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 }, "id": 24,
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "showLegend": true, "placement": "bottom" } },
+      "description": "GC events per second broken down by collector type.",
+      "targets": [
+        { "expr": "sum by(jvm_gc_name) (rate(jvm_gc_duration_seconds_count{job=~\"$job\", host_name=~\"$pod\"}[$rate_window]))", "legendFormat": "{{jvm_gc_name}}", "interval": "$min_step" }
+      ],
+      "title": "GC Count/s by Type",
+      "type": "timeseries"
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 32 }, "id": 108, "title": "☕ JVM Threads & CPU", "type": "row" },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 1, "pointSize": 0, "showPoints": "never" } } },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 33 }, "id": 22,
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "hidden", "showLegend": false } },
+      "targets": [
+        { "expr": "jvm_threads_live_threads{job=~\"$job\", host_name=~\"$pod\"}", "legendFormat": "Live - {{host_name}}", "interval": "$min_step" },
+        { "expr": "jvm_threads_daemon_threads{job=~\"$job\", host_name=~\"$pod\"}", "legendFormat": "Daemon - {{host_name}}", "interval": "$min_step" }
+      ],
+      "title": "JVM Threads per Pod",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "cores", "min": 0, "custom": { "lineWidth": 1, "pointSize": 0, "showPoints": "never" } } },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 33 }, "id": 23,
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "hidden", "showLegend": false } },
+      "description": "JVM process CPU in cores (1.0 = 1 full core). Only JVM process time, unlike cAdvisor which includes the whole container.",
+      "targets": [
+        { "expr": "sum by(host_name) (rate(jvm_cpu_time_seconds_total{job=~\"$job\", host_name=~\"$pod\"}[$rate_window]))", "legendFormat": "{{host_name}}", "interval": "$min_step" }
+      ],
+      "title": "JVM Process CPU (cores) per Pod",
+      "type": "timeseries"
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 41 }, "id": 104, "title": "🔀 HPA & Scaling Dynamics", "type": "row" },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "custom": { "lineWidth": 1, "pointSize": 0, "showPoints": "never" } },
+        "overrides": [
+          {
+            "matcher": { "id": "byFrameRefID", "options": "D" },
+            "properties": [
+              { "id": "custom.drawStyle", "value": "bars" },
+              { "id": "custom.fillOpacity", "value": 60 },
+              { "id": "custom.lineWidth", "value": 0 },
+              { "id": "custom.barAlignment", "value": 0 },
+              { "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } },
+              { "id": "custom.hideFrom", "value": { "legend": true, "tooltip": false, "viz": false } }
+            ]
+          }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 60 }, "id": 40,
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "showLegend": true, "placement": "bottom" } },
+      "targets": [
+        { "refId": "A", "expr": "kube_horizontalpodautoscaler_status_current_replicas{horizontalpodautoscaler=~\"$hpa\"}", "legendFormat": "Current", "interval": "$min_step" },
+        { "refId": "B", "expr": "kube_horizontalpodautoscaler_status_desired_replicas{horizontalpodautoscaler=~\"$hpa\"}", "legendFormat": "Desired", "interval": "$min_step" },
+        { "refId": "C", "expr": "kube_horizontalpodautoscaler_spec_max_replicas{horizontalpodautoscaler=~\"$hpa\"}", "legendFormat": "Max", "interval": "$min_step" },
+        { "refId": "D", "expr": "kube_pod_status_phase{pod=~\"$pod_prefix.*\", phase=\"Pending\"}", "legendFormat": "{{pod}}", "interval": "$min_step" }
+      ],
+      "title": "HPA Replica Timeline",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "lineWidth": 1, "pointSize": 0, "showPoints": "never" } } },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 60 }, "id": 41,
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "showLegend": true, "placement": "bottom" } },
+      "description": "Should stay roughly constant during a scale-out if scaling is linear. A drop means new pods are dragging the average (cold start). A rise means you scaled too late.",
+      "targets": [{ "expr": "sum(rate(http_server_request_duration_seconds_count{job=~\"$job\"}[$rate_window])) / count(count by(host_name) (http_server_request_duration_seconds_count{job=~\"$job\"}))", "legendFormat": "Req/s per Pod", "interval": "$min_step" }],
+      "title": "Scaling Efficiency (Req/s per Pod)",
+      "type": "timeseries"
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 68 }, "id": 111, "title": "🖥️ Workload Aggregated CPU & Memory", "type": "row" },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": { "unit": "cores", "custom": { "lineWidth": 1, "pointSize": 0, "showPoints": "never" } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Requests" }, "properties": [{ "id": "custom.lineStyle", "value": { "dash": [8, 4], "fill": "dash" } }] },
+          { "matcher": { "id": "byName", "options": "Limits" }, "properties": [
+            { "id": "custom.lineStyle", "value": { "dash": [4, 4], "fill": "dash" } },
+            { "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }
+          ]}
+        ]
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 69 }, "id": 62,
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "showLegend": true, "placement": "bottom" } },
+      "description": "Total CPU across all petclinic pods. Used (solid) vs requested (dashed) vs limit (red dashed).",
+      "targets": [
+        { "refId": "A", "expr": "sum(rate(container_cpu_usage_seconds_total{pod=~\"$pod_prefix.*\", container!=\"\", container!=\"POD\"}[$rate_window]))", "legendFormat": "Used", "interval": "$min_step" },
+        { "refId": "B", "expr": "sum(kube_pod_container_resource_requests{pod=~\"$pod_prefix.*\", resource=\"cpu\", container!=\"\"})", "legendFormat": "Requests", "interval": "$min_step" },
+        { "refId": "C", "expr": "sum(kube_pod_container_resource_limits{pod=~\"$pod_prefix.*\", resource=\"cpu\", container!=\"\"})", "legendFormat": "Limits", "interval": "$min_step" }
+      ],
+      "title": "Total CPU — Used vs Requests vs Limits",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": { "unit": "bytes", "custom": { "lineWidth": 1, "pointSize": 0, "showPoints": "never" } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Requests" }, "properties": [{ "id": "custom.lineStyle", "value": { "dash": [8, 4], "fill": "dash" } }] },
+          { "matcher": { "id": "byName", "options": "Limits" }, "properties": [
+            { "id": "custom.lineStyle", "value": { "dash": [4, 4], "fill": "dash" } },
+            { "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }
+          ]}
+        ]
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 69 }, "id": 63,
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "showLegend": true, "placement": "bottom" } },
+      "description": "Total memory across all petclinic pods. Used = working set. Large gap = over-provisioned; used approaching limits = OOMKill risk.",
+      "targets": [
+        { "refId": "A", "expr": "sum(container_memory_working_set_bytes{pod=~\"$pod_prefix.*\", container!=\"\", container!=\"POD\"})", "legendFormat": "Used", "interval": "$min_step" },
+        { "refId": "B", "expr": "sum(kube_pod_container_resource_requests{pod=~\"$pod_prefix.*\", resource=\"memory\", container!=\"\"})", "legendFormat": "Requests", "interval": "$min_step" },
+        { "refId": "C", "expr": "sum(kube_pod_container_resource_limits{pod=~\"$pod_prefix.*\", resource=\"memory\", container!=\"\"})", "legendFormat": "Limits", "interval": "$min_step" }
+      ],
+      "title": "Total Memory — Used vs Requests vs Limits",
+      "type": "timeseries"
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 77 }, "id": 110, "title": "🖥️ Pod CPU & Memory vs Requests/Limits", "type": "row" },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": { "unit": "cores", "custom": { "lineWidth": 1, "pointSize": 0, "showPoints": "never" } },
+        "overrides": [
+          { "matcher": { "id": "byFrameRefID", "options": "B" }, "properties": [{ "id": "custom.lineStyle", "value": { "dash": [8, 4], "fill": "dash" } }] },
+          { "matcher": { "id": "byFrameRefID", "options": "C" }, "properties": [
+            { "id": "custom.lineStyle", "value": { "dash": [4, 4], "fill": "dash" } },
+            { "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }
+          ]}
+        ]
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 78 }, "id": 60,
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "hidden", "showLegend": false } },
+      "description": "Solid = actual usage. Dashed = request. Red dashed = limit. Hitting the limit causes CPU throttling.",
+      "targets": [
+        { "refId": "A", "expr": "sum by(pod) (rate(container_cpu_usage_seconds_total{pod=~\"$pod_prefix.*\", container!=\"\", container!=\"POD\"}[$rate_window]))", "legendFormat": "Used - {{pod}}", "interval": "$min_step" },
+        { "refId": "B", "expr": "sum by(pod) (kube_pod_container_resource_requests{pod=~\"$pod_prefix.*\", resource=\"cpu\", container!=\"\"})", "legendFormat": "Request - {{pod}}", "interval": "$min_step" },
+        { "refId": "C", "expr": "sum by(pod) (kube_pod_container_resource_limits{pod=~\"$pod_prefix.*\", resource=\"cpu\", container!=\"\"})", "legendFormat": "Limit - {{pod}}", "interval": "$min_step" }
+      ],
+      "title": "CPU Usage vs Requests & Limits per Pod",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": { "unit": "bytes", "custom": { "lineWidth": 1, "pointSize": 0, "showPoints": "never" } },
+        "overrides": [
+          { "matcher": { "id": "byFrameRefID", "options": "B" }, "properties": [{ "id": "custom.lineStyle", "value": { "dash": [8, 4], "fill": "dash" } }] },
+          { "matcher": { "id": "byFrameRefID", "options": "C" }, "properties": [
+            { "id": "custom.lineStyle", "value": { "dash": [4, 4], "fill": "dash" } },
+            { "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }
+          ]}
+        ]
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 78 }, "id": 61,
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "hidden", "showLegend": false } },
+      "description": "Solid = working set. Dashed = request. Red dashed = limit. Exceeding the limit triggers an OOMKill.",
+      "targets": [
+        { "refId": "A", "expr": "sum by(pod) (container_memory_working_set_bytes{pod=~\"$pod_prefix.*\", container!=\"\", container!=\"POD\"})", "legendFormat": "Used - {{pod}}", "interval": "$min_step" },
+        { "refId": "B", "expr": "sum by(pod) (kube_pod_container_resource_requests{pod=~\"$pod_prefix.*\", resource=\"memory\", container!=\"\"})", "legendFormat": "Request - {{pod}}", "interval": "$min_step" },
+        { "refId": "C", "expr": "sum by(pod) (kube_pod_container_resource_limits{pod=~\"$pod_prefix.*\", resource=\"memory\", container!=\"\"})", "legendFormat": "Limit - {{pod}}", "interval": "$min_step" }
+      ],
+      "title": "Memory Usage vs Requests & Limits per Pod",
+      "type": "timeseries"
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 86 }, "id": 107, "title": "🚨 CPU Throttling & Container Instability", "type": "row" },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": { "unit": "percentunit", "min": 0, "max": 1, "custom": { "lineWidth": 1, "pointSize": 0, "showPoints": "never" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 0.1 }, { "color": "red", "value": 0.25 }] }
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 87 }, "id": 70,
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "hidden", "showLegend": false } },
+      "description": "Ratio of throttled CFS periods vs total periods. Above 25% (red) means the container is regularly hitting its CPU limit — increases p99 latency without showing up in CPU usage metrics.",
+      "targets": [{ "refId": "A", "expr": "sum by(pod) (rate(container_cpu_cfs_throttled_periods_total{pod=~\"$pod_prefix.*\", container!=\"\", container!=\"POD\"}[$rate_window])) / sum by(pod) (rate(container_cpu_cfs_periods_total{pod=~\"$pod_prefix.*\", container!=\"\", container!=\"POD\"}[$rate_window]))", "legendFormat": "Throttle % - {{pod}}", "interval": "$min_step" }],
+      "title": "CPU Throttling per Pod",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "custom": { "lineWidth": 0, "fillOpacity": 80, "drawStyle": "bars", "barAlignment": 0 } },
+        "overrides": [
+          { "matcher": { "id": "byFrameRefID", "options": "A" }, "properties": [{ "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }] },
+          { "matcher": { "id": "byFrameRefID", "options": "B" }, "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }] }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 87 }, "id": 71,
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "hidden", "showLegend": false } },
+      "description": "Each bar = restart events within $rate_window. OOMKills (red) = container hit memory limit. Restarts (orange) include OOMKills plus crashes and liveness failures.",
+      "targets": [
+        { "refId": "A", "expr": "sum by(pod) (increase(kube_pod_container_status_restarts_total{pod=~\"$pod_prefix.*\"}[$rate_window]))", "legendFormat": "Restarts - {{pod}}", "interval": "$min_step" },
+        { "refId": "B", "expr": "sum by(pod) (kube_pod_container_status_last_terminated_reason{pod=~\"$pod_prefix.*\", reason=\"OOMKilled\"})", "legendFormat": "OOMKilled - {{pod}}", "interval": "$min_step" }
+      ],
+      "title": "OOMKills & Container Restarts per Pod",
+      "type": "timeseries"
+    }
+
+  ],
+
+  "refresh": "5s",
+  "schemaVersion": 38,
+  "tags": ["java", "kubernetes", "petclinic", "opentelemetry", "scaling"],
+  "templating": {
+    "list": [
+      {
+        "hide": 0, "label": "Min Step", "name": "min_step", "type": "custom",
+        "description": "Minimum query step — match your OTel scrape interval",
+        "current": { "selected": true, "text": "1m", "value": "1m" },
+        "options": [
+          { "selected": false, "text": "5s",  "value": "5s" },
+          { "selected": false, "text": "15s", "value": "15s" },
+          { "selected": false, "text": "30s", "value": "30s" },
+          { "selected": true,  "text": "1m",  "value": "1m" },
+          { "selected": false, "text": "5m",  "value": "5m" }
+        ],
+        "query": "5s,15s,30s,1m,5m"
+      },
+      {
+        "hide": 0, "label": "Rate Window", "name": "rate_window", "type": "custom",
+        "description": "Window for rate() and histogram_quantile() — should be at least 4x scrape interval",
+        "current": { "selected": true, "text": "1m", "value": "1m" },
+        "options": [
+          { "selected": false, "text": "5s",  "value": "5s" },
+          { "selected": false, "text": "15s", "value": "15s" },
+          { "selected": false, "text": "30s", "value": "30s" },
+          { "selected": true,  "text": "1m",  "value": "1m" },
+          { "selected": false, "text": "5m",  "value": "5m" }
+        ],
+        "query": "5s,15s,30s,1m,5m"
+      },
+      { "current": { "value": "petclinic", "text": "petclinic" }, "hide": 0, "label": "Pod Prefix", "name": "pod_prefix", "options": [{ "selected": true, "text": "petclinic", "value": "petclinic" }], "query": "petclinic", "type": "textbox" },
+      { "current": {}, "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "definition": "label_values(http_server_request_duration_seconds_count, job)", "hide": 0, "includeAll": false, "label": "Job", "multi": false, "name": "job", "options": [], "query": { "query": "label_values(http_server_request_duration_seconds_count, job)", "refId": "StandardVariableQuery" }, "refresh": 2, "sort": 1, "type": "query" },
+      { "current": {}, "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "definition": "label_values(http_server_request_duration_seconds_count{job=~\"$job\"}, host_name)", "hide": 0, "includeAll": true, "allValue": ".*", "label": "Pod", "multi": false, "name": "pod", "options": [], "query": { "query": "label_values(http_server_request_duration_seconds_count{job=~\"$job\"}, host_name)", "refId": "StandardVariableQuery" }, "refresh": 2, "sort": 1, "type": "query" },
+      { "current": {}, "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "definition": "label_values(kube_horizontalpodautoscaler_status_current_replicas, horizontalpodautoscaler)", "hide": 0, "includeAll": true, "label": "HPA", "multi": false, "name": "hpa", "options": [], "query": { "query": "label_values(kube_horizontalpodautoscaler_status_current_replicas, horizontalpodautoscaler)", "refId": "StandardVariableQuery" }, "refresh": 2, "sort": 1, "type": "query" }
+    ]
+  },
+  "time": { "from": "now-15m", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "PetClinic — Java Scaling Performance & Efficiency",
+  "uid": "petclinic-scaling-v1",
+  "version": 11
+}
