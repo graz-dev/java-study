@@ -18,10 +18,10 @@ goal:
       - name: Mem Util <= 0.8 * Mem Request petclinic
         formula: petclinic_workload.k8s_workload_memory_used - (0.8 * petclinic_workload.k8s_workload_memory_request) <= 0
       
-windowing:
-  type: trim 
-  trim: [1m, 5m]
-  task: Run Workload
+# windowing:
+#  type: trim 
+#  trim: [1m, 5m]
+#  task: Run Workload
 
 metricsSelection:
   - petclinic_webapp.requests_throughput
