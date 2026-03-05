@@ -18,10 +18,10 @@ goal:
       - name: Mem Util <= 0.8 * Mem Request petclinic
         formula: petclinic_workload.k8s_workload_memory_used - (0.8 * petclinic_workload.k8s_workload_memory_request) <= 0
       
-# windowing:
-#  type: trim 
-#  trim: [1m, 5m]
-#  task: Run Workload
+windowing:
+ type: trim 
+ trim: [1m, 1m]
+ task: Run Workload
 
 metricsSelection:
   - petclinic_webapp.requests_throughput
@@ -56,22 +56,17 @@ parametersSelection:
     domain: [300, 2000]
   - name: petclinic_container.cpu_limit
     domain: [750, 3000]
-  - name: petclinic_container.memory_request
-    domain: [1024, 8192]
-  - name: petclinic_container.memory_limit
-    domain: [4096, 10240]
   - name: petclinic_hpa.targetCPUUtilizationPercentage
     domain: [30, 90]
   - name: petclinic_jvm.jvm_maxHeapSize
-    domain: [4096, 10240]
+    domain: [128, 2048]
   - name: petclinic_jvm.jvm_gcType
     categories: ["G1", "Parallel", "Serial"]
-  - name: petclinic_jvm.jvm_minHeapFreeRatio
-    domain: [10, 40]
-  - name: petclinic_jvm.jvm_maxHeapFreeRatio
-    domain: [20, 70]
+  - name: petclinic_jvm.jvm_tieredCompilation
+  - name: petclinic_jvm.jvm_compilationThreads
+    domain: [2, 4]
   - name: petclinic_jvm.jvm_GCTimeRatio
-    domain: [2, 99]
+    domain: [1, 99]
   - name: petclinic_jvm.jvm_tieredCompilationStopAtLevel #(default 4)
     domain: [1, 4]
   - name: petclinic_jvm.jvm_compileThresholdScaling
@@ -82,10 +77,6 @@ parametersSelection:
 parameterConstraints:
   - name: CPU req < limit petclinic
     formula: petclinic_container.cpu_request <= petclinic_container.cpu_limit
-  - name: Mem request <= Mem limit petclinic
-    formula: petclinic_container.memory_request <= petclinic_container.memory_limit
-  - name: max heap + offheap <= Mem limit petclinic
-    formula: petclinic_jvm.jvm_maxHeapSize + 512 <= petclinic_container.memory_limit
   
 steps:
   - name: baseline
@@ -98,3 +89,7 @@ steps:
       petclinic_container.memory_limit: 2000
       petclinic_hpa.targetCPUUtilizationPercentage: 50
       petclinic_jvm.jvm_maxHeapSize: 512
+  - name: optimise
+    type: optimize
+    numberOfExperiments: 150
+    maxFailedExperiments: 50
